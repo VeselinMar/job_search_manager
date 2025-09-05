@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">My Applications</h1>
+
+<!-- Add Application Form -->
+<form method="POST" action="{{ url_for('main.add_application') }}" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <input type="text" name="firm" class="form-control" placeholder="Company name" required>
+    </div>
+    <div class="col-md-3">
+        <input type="text" name="position" class="form-control" placeholder="Position title" required>
+    </div>
+    <div class="col-md-4">
+        <input type="text" name="note" class="form-control" placeholder="Optional note">
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Add</button>
+    </div>
+</form>
+
+<!-- Search and Status Filter -->
+<form method="GET" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <input type="text" name="search" class="form-control" placeholder="Search firm or position" value="{{ search }}">
+    </div>
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">All Statuses</option>
+            <option value="Applied" {% if status_filter=='Applied' %}selected{% endif %}>Applied</option>
+            <option value="Interview" {% if status_filter=='Interview' %}selected{% endif %}>Interview</option>
+            <option value="Offer" {% if status_filter=='Offer' %}selected{% endif %}>Offer</option>
+            <option value="Rejected" {% if status_filter=='Rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('main.list_applications') }}" class="btn btn-secondary w-100">Reset</a>
+    </div>
+</form>
+
+<!-- Applications Table -->
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Company</th>
+            <th>Position</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>History</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for app in applications %}
+        <tr>
+            <td>{{ app.firm }}</td>
+            <td>{{ app.position }}</td>
+            <td>
+                <span class="badge 
+                    {% if app.status=='Applied' %}bg-secondary
+                    {% elif app.status=='Interview' %}bg-info
+                    {% elif app.status=='Offer' %}bg-success
+                    {% elif app.status=='Rejected' %}bg-danger
+                    {% endif %}">
+                    {{ app.status }}
+                </span>
+            </td>
+            <td>{{ app.created_at.strftime("%Y-%m-%d") }}</td>
+            <td>
+                {% if history_counts[app.id] > 0 %}
+                <a href="{{ url_for('main.firm_history', firm=app.firm) }}" class="btn btn-sm btn-outline-primary">
+                    {{ history_counts[app.id] }} previous
+                </a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td class="text-end">
+                <div class="btn-group">
+                    <a href="{{ url_for('main.update_status', id=app.id, status='Interview') }}" class="btn btn-sm btn-info">Interview</a>
+                    <a href="{{ url_for('main.update_status', id=app.id, status='Offer') }}" class="btn btn-sm btn-success">Offer</a>
+                    <a href="{{ url_for('main.update_status', id=app.id, status='Rejected') }}" class="btn btn-sm btn-danger">Rejected</a>
+                    <a href="{{ url_for('main.delete_application', id=app.id) }}" class="btn btn-sm btn-outline-secondary">Delete</a>
+
+                    <!-- Edit Note Modal Trigger -->
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#noteModal{{ app.id }}">
+                        Edit Note
+                    </button>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Note Edit Modal -->
+        <div class="modal fade" id="noteModal{{ app.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('main.update_note', application_id=app.id) }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Note for {{ app.firm }} - {{ app.position }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <textarea name="note" class="form-control" rows="4">{{ app.note }}</textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination Controls -->
+{% if pagination.pages > 1 %}
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+    {% if pagination.has_prev %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('main.list_applications', page=pagination.prev_num, search=search, status=status_filter) }}">Previous</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+    {% endif %}
+
+    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if page_num %}
+        {% if page_num == pagination.page %}
+          <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="{{ url_for('main.list_applications', page=page_num, search=search, status=status_filter) }}">{{ page_num }}</a></li>
+        {% endif %}
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('main.list_applications', page=pagination.next_num, search=search, status=status_filter) }}">Next</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

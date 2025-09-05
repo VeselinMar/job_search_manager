@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">{{ firm }} - Application History</h1>
+
+{% if applications %}
+    <div class="list-group">
+    {% for app in applications %}
+        <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ app.position }}</h5>
+                <small>{{ app.created_at.strftime("%Y-%m-%d") }}</small>
+            </div>
+            <p class="mb-1">Status: 
+                <span class="badge 
+                    {% if app.status == 'Offer' %}bg-success
+                    {% elif app.status == 'Interview' %}bg-info
+                    {% elif app.status == 'Rejected' %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {{ app.status }}
+                </span>
+            </p>
+            {% if app.note %}
+            <p class="mb-1">Note: {{ app.note }}</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+    </div>
+{% else %}
+    <p>No previous applications for this firm.</p>
+{% endif %}
+
+<a href="{{ url_for('main.list_applications') }}" class="btn btn-secondary mt-3">Back to Applications</a>
+{% endblock %}
