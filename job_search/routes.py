@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from .models import Application
 from . import db
+from .scrapers.scrape_karriere import scrape_karriere
 
 main = Blueprint("main", __name__)
 
@@ -97,3 +98,9 @@ def firm_history(firm):
     # Get all applications for this firm, newest first
     applications = Application.query.filter_by(firm=firm).order_by(Application.created_at.desc()).all()
     return render_template("history.html", applications=applications, firm=firm, title=f"{firm} History")
+
+
+@main.route("/jobs")
+def jobs():
+    postings = scrape_karriere()
+    return render_template("jobs.html", postings=postings)
