@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from .models import Application
 from . import db
-from .scrapers.scrape_karriere import scrape_karriere
+from .scrapers.scrape_karriere import scrape_karriere, get_cached_postings
 
 main = Blueprint("main", __name__)
 
@@ -102,5 +102,12 @@ def firm_history(firm):
 
 @main.route("/jobs")
 def jobs():
-    postings = scrape_karriere()
-    return render_template("jobs.html", postings=postings)
+    cache = get_cached_postings()
+    postings = cache["postings"]
+    last_refreshed = cache["last_refreshed"]
+    return render_template("jobs.html", postings=postings, last_refreshed=last_refreshed,)
+
+@main.route("/jobs/refresh")
+def refresh_jobs():
+    scrape_karriere()
+    return redirect(url_for("main.jobs"))
