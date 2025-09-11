@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from .models import Application
 from . import db
-from .scrapers.scrape_karriere import scrape_karriere, get_cached_postings
+from .scrapers.scrape_karriere import scrape_karriere, get_cached_postings, _cache
 
 main = Blueprint("main", __name__)
 
@@ -110,4 +110,14 @@ def jobs():
 @main.route("/jobs/refresh")
 def refresh_jobs():
     scrape_karriere()
+    return redirect(url_for("main.jobs"))
+
+@main.route("/jobs/remove/<int:index>", methods=["POST"])
+def remove_job(index):
+    global _cache
+    try:
+        _cache["postings"].pop(index)
+        flash("Job removed from list", "info")
+    except IndexError:
+        flash("Job already removed or invalid index", "warning")
     return redirect(url_for("main.jobs"))
